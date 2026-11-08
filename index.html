@@ -488,6 +488,7 @@ function tocar(arquivo, titulo, daFila){
   el('canto').hidden = false;
   renderFila();
   pedeTelaCheia();
+  el('busca-fila').focus();
   v.play().catch(() => {});
   return true;
 }
@@ -705,6 +706,25 @@ el('fechar').addEventListener('click', fechar);
 el('fechar-2').addEventListener('click', fechar);
 el('proxima-agora').addEventListener('click', tocarProximaDaFila);
 el('busca-fila').addEventListener('input', e => buscaFila(e.target.value));
+/* Enter no campo: coloca a musica pelo codigo na fila e deixa o campo pronto para o proximo codigo */
+el('busca-fila').addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const campo = el('busca-fila');
+  const codigo = campo.value.trim();
+  if (!codigo) return;
+  const item = LISTA.find(x => String(x[0]) === codigo);
+  if (!item){ toast('Código não encontrado: ' + codigo); return; }
+  const [, ai, musica, arquivo] = item;
+  if (ARQUIVOS.size === 0){ toast('Carregue as músicas do pendrive primeiro.'); return; }
+  if (!ARQUIVOS.has(arquivo)){ toast('Esta música não está no pendrive.'); return; }
+  addFila(arquivo, ARTISTAS[ai].n + ' - ' + musica);
+  if (FILA.some(x => x.arquivo === arquivo)){
+    campo.value = '';
+    buscaFila('');
+  }
+  campo.focus();
+});
 el('fila-limpar').addEventListener('click', () => { FILA = []; limpaTimers(); el('proxima').hidden = true; renderFila(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !el('player').hidden) fechar(); });
 
