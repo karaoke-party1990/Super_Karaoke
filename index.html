@@ -403,14 +403,15 @@ function toast(msg){
   toast._t = setTimeout(() => { t.hidden = true; }, 3200);
 }
 
-/* Sorteio: numero de 75 a 100 e mensagem pela faixa (limite de cima fica na faixa seguinte) */
+/* Sorteio: numero de 65 a 100 e mensagem pela faixa (limite de cima fica na faixa seguinte) */
 function mensagem(n){
+  if (n <= 74) return 'Que voz de taquara rachada, precisa de treino';
   if (n <= 81) return 'Você precisa treinar mais';
   if (n <= 87) return 'Sua voz é muito linda';
   if (n <= 94) return 'Você é uma estrela';
   return 'Leva pro The Voice, é uma lenda';
 }
-function sorteia(){ return 75 + Math.floor(Math.random() * 26); }   // 75..100
+function sorteia(){ return 65 + Math.floor(Math.random() * 36); }   // 65..100
 
 function linhasTabela(corpo, linhas){
   // linhas: [codigo, artista|null, musica, arquivo]
@@ -593,7 +594,7 @@ function mostraSorteio(){
       agendaFila();
       return;
     }
-    num.textContent = 75 + Math.floor(Math.random() * 26);
+    num.textContent = 65 + Math.floor(Math.random() * 36);
     TIMER_NUM = setTimeout(gira, 35 + 260 * p * p);   // comeca rapido e desacelera
   };
   gira();
