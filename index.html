@@ -353,6 +353,7 @@ tr.faixa:focus-visible{outline:none}
   <video id="video" controls controlsList="nofullscreen noremoteplayback" disablePictureInPicture playsinline></video>
   <div class="topo-dir">
     <p id="titulo-player"></p>
+    <button class="btn ghost pequeno" id="pular" type="button">Pular música</button>
     <button class="btn ghost pequeno" id="tela-cheia" type="button">Tela cheia</button>
     <button class="btn ghost pequeno" id="fechar" type="button">Fechar</button>
   </div>
@@ -504,6 +505,14 @@ function atualizaBotaoTela(){
 }
 document.addEventListener('fullscreenchange', atualizaBotaoTela);
 el('tela-cheia').addEventListener('click', alternaTelaCheia);
+/* Pular: passa para a proxima da fila (sem nota) ou volta para a home se a fila estiver vazia */
+function pulaMusica(){
+  el('video').pause();
+  clearTimeout(TIMER_FILA); TIMER_FILA = null;
+  if (FILA.length){ tocarProximaDaFila(); return; }
+  voltaAoHome();
+}
+el('pular').addEventListener('click', pulaMusica);
 function pedeTelaCheia(){
   const p = el('player');
   if (p.requestFullscreen && !document.fullscreenElement){ p.requestFullscreen().catch(() => {}); }
