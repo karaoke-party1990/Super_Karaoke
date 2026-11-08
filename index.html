@@ -514,6 +514,11 @@ function sairTelaCheia(){
 function liberaUrl(){
   if (URL_ATUAL){ URL.revokeObjectURL(URL_ATUAL); URL_ATUAL = null; }
 }
+/* Fim da fila: fecha o player e vai para a tela inicial */
+function voltaAoHome(){
+  fechar();
+  if (location.hash !== '#home'){ location.hash = '#home'; } else { rota(); }
+}
 function fechar(){
   limpaTimers();
   FILA_EM_USO = false;
@@ -609,7 +614,7 @@ function agendaFila(){
   if (FILA.length === 0){
     box.hidden = true;
     // a fila acabou: a nota aparece e logo depois volta ao menu principal
-    TIMER_FILA = setTimeout(() => { TIMER_FILA = null; fechar(); }, SEGUNDOS_VOLTA * 1000);
+    TIMER_FILA = setTimeout(() => { TIMER_FILA = null; voltaAoHome(); }, SEGUNDOS_VOLTA * 1000);
     return;
   }
   el('proxima-agora').hidden = false;
