@@ -236,6 +236,10 @@ tr.faixa:focus-visible{outline:none}
   .home-logo{width:min(300px,80%)}
   .home-desc{font-size:.9rem}
 }
+.config{margin-top:12px;background:rgba(255,255,255,.12);border-radius:12px;padding:10px 14px;color:#fff;font-size:.9rem;text-align:left}
+.config h2{font-size:1rem;margin:0 0 6px;color:#ffd23f}
+.config label{display:block;margin:4px 0;cursor:pointer}
+.config input{accent-color:#ffd23f;margin-right:6px;vertical-align:middle}
 @media (max-width:560px){
   .brand img{height:44px}
   .panel{padding:16px}
@@ -269,6 +273,12 @@ tr.faixa:focus-visible{outline:none}
           <div class="stats">
             <div class="stat"><b id="st-faixas">0</b>músicas</div>
             <div class="stat"><b id="st-artistas">0</b>artistas</div>
+          </div>
+          <div class="config">
+            <h2>Nota do sorteio</h2>
+            <label><input type="radio" name="nivel" value="alto"> Alto (65 a 100)</label>
+            <label><input type="radio" name="nivel" value="medio"> Médio (75 a 100)</label>
+            <label><input type="checkbox" id="nota-ativa"> Mostrar a nota depois de cada música</label>
           </div>
         </div>
         <div class="qr-home panel">
@@ -369,16 +379,18 @@ tr.faixa:focus-visible{outline:none}
     <p id="fila-vazia" class="fila-vazia">Nenhuma música na fila.</p>
   </div>
   <div id="resultado" class="resultado" hidden>
-    <p class="rotulo">Sua pontuação</p>
-    <div id="numero" class="numero">75</div>
-    <p id="mensagem" class="mensagem"></p>
+    <div id="bloco-nota">
+      <p class="rotulo">Sua pontuação</p>
+      <div id="numero" class="numero">75</div>
+      <p id="mensagem" class="mensagem"></p>
+    </div>
     <div id="proxima" class="proxima" hidden>
       <p class="rotulo">Próxima da fila</p>
       <p id="proxima-titulo" class="proxima-titulo"></p>
       <p id="proxima-aviso" class="proxima-aviso"></p>
       <div class="acoes"><button class="btn" id="proxima-agora" type="button">Tocar agora</button></div>
     </div>
-    <div class="acoes">
+    <div id="acoes-final" class="acoes">
       <button class="btn alt" id="fechar-2" type="button">Voltar ao catálogo</button>
     </div>
   </div>
@@ -412,7 +424,7 @@ function mensagem(n){
   if (n <= 94) return 'Você é uma estrela';
   return 'Leva pro The Voice, é uma lenda';
 }
-function sorteia(){ return 65 + Math.floor(Math.random() * 36); }   // 65..100
+function sorteia(){ return NIVEL === 'medio' ? 75 + Math.floor(Math.random() * 26) : 65 + Math.floor(Math.random() * 36); }   // alto 65..100, medio 75..100
 
 function linhasTabela(corpo, linhas){
   // linhas: [codigo, artista|null, musica, arquivo]
@@ -460,7 +472,9 @@ const CONTAGEM = 5;       // segundos entre a nota e a proxima musica da fila
 let FILA = [];            // [{arquivo, titulo}] — no maximo 6
 let TIMER_FILA = null;
 let TIMER_NUM = null;
-let FILA_EM_USO = false;  // a musica atual veio da fila     // sorteio girando
+let FILA_EM_USO = false;  // a musica atual veio da fila
+let NIVEL = 'alto';        // 'alto' (65..100) ou 'medio' (75..100)
+let NOTA_ATIVA = true;     // mostrar a nota depois de cada musica     // sorteio girando
 let AC = null;            // contexto de audio para o rufo
 let ANIM = null;
 
@@ -595,6 +609,8 @@ function mostraSorteio(){
   el('resultado').hidden = false;
   el('canto').hidden = true;
   el('proxima').hidden = true;
+  el('bloco-nota').hidden = false;
+  el('acoes-final').hidden = false;
   const num = el('numero'), msg = el('mensagem');
   msg.textContent = '';
   num.textContent = '--';
@@ -609,7 +625,7 @@ function mostraSorteio(){
       agendaFila();
       return;
     }
-    num.textContent = 65 + Math.floor(Math.random() * 36);
+    num.textContent = sorteia();
     TIMER_NUM = setTimeout(gira, 35 + 260 * p * p);   // comeca rapido e desacelera
   };
   gira();
@@ -715,7 +731,42 @@ function buscaFila(termo){
   }
 }
 
-el('video').addEventListener('ended', mostraSorteio);
+/* Fim da musica: com nota ativa mostra o sorteio; sem nota vai direto para a contagem da proxima */
+function aoTerminarMusica(){ if (NOTA_ATIVA) mostraSorteio(); else mostraSemNota(); }
+function mostraSemNota(){
+  limpaTimers();
+  el('video').hidden = true;
+  el('resultado').hidden = false;
+  el('canto').hidden = true;
+  el('bloco-nota').hidden = true;
+  el('acoes-final').hidden = true;
+  if (FILA.length === 0){
+    el('resultado').hidden = true;
+    TIMER_FILA = setTimeout(() => { TIMER_FILA = null; voltaAoHome(); }, SEGUNDOS_VOLTA * 1000);
+    return;
+  }
+  agendaFila();
+}
+el('video').addEventListener('ended', aoTerminarMusica);
+
+/* Configuracao da nota (guardada no proprio aparelho) */
+function carregaConfig(){
+  try{
+    const c = JSON.parse(localStorage.getItem('karaoke_config') || '{}');
+    if (c.nivel === 'alto' || c.nivel === 'medio') NIVEL = c.nivel;
+    if (typeof c.nota === 'boolean') NOTA_ATIVA = c.nota;
+  }catch(e){}
+}
+function salvaConfig(){
+  try{ localStorage.setItem('karaoke_config', JSON.stringify({ nivel: NIVEL, nota: NOTA_ATIVA })); }catch(e){}
+}
+carregaConfig();
+document.querySelectorAll('input[name="nivel"]').forEach(r => {
+  r.checked = r.value === NIVEL;
+  r.addEventListener('change', () => { NIVEL = r.value; salvaConfig(); });
+});
+el('nota-ativa').checked = NOTA_ATIVA;
+el('nota-ativa').addEventListener('change', e => { NOTA_ATIVA = e.target.checked; salvaConfig(); });
 el('fechar').addEventListener('click', fechar);
 el('fechar-2').addEventListener('click', fechar);
 el('proxima-agora').addEventListener('click', tocarProximaDaFila);
